@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(title='Transactions', content=~{::content})}">
+<div th:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2>All Transactions</h2>
+        <a th:href="@{/transactions/add}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add Transaction
+        </a>
+    </div>
+
+    <!-- Chart Section -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Income vs Expenses</h5>
+                </div>
+                <div class="card-body chart-container">
+                    <canvas id="incomeExpenseChart" width="400" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Financial Overview</h5>
+                </div>
+                <div class="card-body chart-container">
+                    <canvas id="pieChart" width="400" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:if="${#lists.isEmpty(transactions)}" class="text-center text-muted">
+        <p>No transactions found. <a th:href="@{/transactions/add}">Add your first transaction</a></p>
+    </div>
+
+    <div th:unless="${#lists.isEmpty(transactions)}">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Description</th>
+                        <th>Category</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr th:each="transaction : ${transactions}">
+                        <td th:text="${#temporals.format(transaction.date, 'MMM dd, yyyy')}"></td>
+                        <td th:text="${transaction.description}"></td>
+                        <td>
+                            <span th:if="${transaction.category != null}" th:text="${transaction.category.name}"></span>
+                            <span th:if="${transaction.category == null}">Uncategorized</span>
+                        </td>
+                        <td>
+                            <span class="badge" 
+                                  th:classappend="${transaction.type.name() == 'INCOME'} ? 'bg-success' : 'bg-danger'"
+                                  th:text="${transaction.type}"></span>
+                        </td>
+                        <td th:text="'₹' + ${transaction.amount}"></td>
+                        <td>
+                            <a th:href="@{/transactions/edit/{id}(id=${transaction.id})}" class="btn btn-sm btn-outline-primary">Edit</a>
+                            <a th:href="@{/transactions/delete/{id}(id=${transaction.id})}" class="btn btn-sm btn-outline-danger">Delete</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script th:inline="javascript">
+        // Get data from Thymeleaf
+        const totalIncome = /*[[${totalIncome}]]*/ 0;
+        const totalExpenses = /*[[${totalExpenses}]]*/ 0;
+
+        // Bar Chart
+        const ctx1 = document.getElementById('incomeExpenseChart').getContext('2d');
+        new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: ['Income', 'Expenses'],
+                datasets: [{
+                    label: 'Amount ($)',
+                    data: [totalIncome, totalExpenses],
+                    backgroundColor: [
+                        'rgba(40, 167, 69, 0.8)',   // Green for income
+                        'rgba(220, 53, 69, 0.8)'    // Red for expenses
+                    ],
+                    borderColor: [
+                        'rgba(40, 167, 69, 1)',
+                        'rgba(220, 53, 69, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value;
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': $' + context.parsed.y;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Doughnut Chart
+        const ctx2 = document.getElementById('pieChart').getContext('2d');
+        new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: ['Income', 'Expenses'],
+                datasets: [{
+                    data: [totalIncome, totalExpenses],
+                    backgroundColor: [
+                        'rgba(255, 159, 64, 0.8)',  // Orange for income
+                        'rgba(153, 102, 255, 0.8)'  // Purple for expenses
+                    ],
+                    borderColor: [
+                        'rgba(255, 159, 64, 1)',
+                        'rgba(153, 102, 255, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': $' + context.parsed;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</div>
+</html>
+
+
+

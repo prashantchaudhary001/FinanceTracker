@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" th:replace="~{layout :: layout(title='Dashboard', content=~{::content})}">
+<div th:fragment="content">
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-success">
+                <div class="card-header">
+                    <i class="fas fa-arrow-up"></i> Total Income
+                </div>
+                <div class="card-body">
+                    <h4 class="card-title" th:text="'₹' + ${totalIncome}">₹0.00</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-danger">
+                <div class="card-header">
+                    <i class="fas fa-arrow-down"></i> Total Expenses
+                </div>
+                <div class="card-body">
+                    <h4 class="card-title" th:text="'₹' + ${totalExpenses}">₹0.00</h4>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white" th:classappend="${balance >= 0} ? 'bg-success' : 'bg-danger'">
+                <div class="card-header">
+                    <i class="fas fa-balance-scale"></i> Balance
+                </div>
+                <div class="card-body">
+                    <h4 class="card-title" th:text="'₹' + ${balance}">₹0.00</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Section -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Income vs Expenses</h5>
+                </div>
+                <div class="card-body chart-container">
+                    <canvas id="incomeExpenseChart" width="400" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Financial Overview</h5>
+                </div>
+                <div class="card-body chart-container">
+                    <canvas id="pieChart" width="400" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Quick Actions</h5>
+                </div>
+                <div class="card-body">
+                    <a th:href="@{/transactions/add}" class="btn btn-primary me-2">
+                        <i class="fas fa-plus"></i> Add Transaction
+                    </a>
+                    <a th:href="@{/categories/add}" class="btn btn-secondary">
+                        <i class="fas fa-plus"></i> Add Category
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5>Recent Transactions</h5>
+                    <a th:href="@{/transactions}" class="btn btn-sm btn-primary">View All</a>
+                </div>
+                <div class="card-body">
+                    <div th:if="${#lists.isEmpty(recentTransactions)}" class="text-center text-muted">
+                        <p>No transactions found. <a th:href="@{/transactions/add}">Add your first transaction</a></p>
+                    </div>
+                    <div th:unless="${#lists.isEmpty(recentTransactions)}">
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Description</th>
+                                        <th>Category</th>
+                                        <th>Type</th>
+                                        <th>Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr th:each="transaction : ${recentTransactions}">
+                                        <td th:text="${#temporals.format(transaction.date, 'MMM dd, yyyy')}"></td>
+                                        <td th:text="${transaction.description}"></td>
+                                        <td>
+                                            <!-- Debug: <span th:text="${transaction.category}"></span> -->
+                                            <span th:if="${transaction.category != null}" th:text="${transaction.category.name}"></span>
+                                            <span th:unless="${transaction.category != null}">Uncategorized</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge" 
+                                                  th:classappend="${transaction.type.name() == 'INCOME'} ? 'bg-success' : 'bg-danger'"
+                                                  th:text="${transaction.type}"></span>
+                                        </td>
+                                        <td th:text="'₹' + ${transaction.amount}"></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script th:inline="javascript">
+        // Get data from Thymeleaf
+        const totalIncome = /*[[${totalIncome}]]*/ 0;
+        const totalExpenses = /*[[${totalExpenses}]]*/ 0;
+
+        // Line Chart with curves instead of bar chart
+        const ctx1 = document.getElementById('incomeExpenseChart').getContext('2d');
+        new Chart(ctx1, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Income',
+                    data: [totalIncome * 0.8, totalIncome * 0.9, totalIncome, totalIncome * 1.1, totalIncome * 0.95, totalIncome],
+                    backgroundColor: 'rgba(255, 159, 64, 0.1)',
+                    borderColor: 'rgba(255, 159, 64, 1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: 'rgba(255, 159, 64, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6
+                }, {
+                    label: 'Expenses',
+                    data: [totalExpenses * 0.7, totalExpenses * 1.1, totalExpenses * 0.9, totalExpenses, totalExpenses * 1.05, totalExpenses],
+                    backgroundColor: 'rgba(153, 102, 255, 0.1)',
+                    borderColor: 'rgba(153, 102, 255, 1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: 'rgba(153, 102, 255, 1)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: {
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            padding: 20
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(0,0,0,0.1)'
+                        },
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value;
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                },
+                elements: {
+                    point: {
+                        hoverRadius: 8
+                    }
+                }
+            }
+        });
+
+        // Doughnut Chart with orange/purple colors
+        const ctx2 = document.getElementById('pieChart').getContext('2d');
+        new Chart(ctx2, {
+            type: 'doughnut',
+            data: {
+                labels: ['Income', 'Expenses'],
+                datasets: [{
+                    data: [totalIncome, totalExpenses],
+                    backgroundColor: [
+                        'rgba(255, 159, 64, 0.8)',  // Orange for income
+                        'rgba(153, 102, 255, 0.8)'  // Purple for expenses
+                    ],
+                    borderColor: [
+                        'rgba(255, 159, 64, 1)',
+                        'rgba(153, 102, 255, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '60%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 20,
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.label + ': $' + context.parsed;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+
+    <style>
+        /* Body background for the whole page */
+        body {
+            background: linear-gradient(135deg, #f3e8ff 0%, #f8f4ff 50%, #fdfbff 100%) !important;
+            min-height: 100vh;
+        }
+        
+        /* Sidebar styling to match */
+        .sidebar {
+            background: rgba(255, 255, 255, 0.2) !important;
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Sidebar navigation links styling */
+        .sidebar .nav-link {
+            color: rgba(139, 69, 199, 0.9) !important;
+            font-weight: 500;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin: 4px 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar .nav-link:hover {
+            background: rgba(139, 69, 199, 0.1) !important;
+            color: #8b45c7 !important;
+            transform: translateX(5px);
+        }
+        
+        .sidebar .nav-link.active {
+            background: rgba(139, 69, 199, 0.2) !important;
+            color: #8b45c7 !important;
+        }
+        
+        .sidebar .nav-link i {
+            margin-right: 8px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        #incomeExpenseChart, #pieChart {
+            max-height: 250px !important;
+        }
+        .card-body canvas {
+            height: 250px !important;
+        }
+        
+        /* Dashboard header background */
+        .pt-3.pb-2.mb-3.border-bottom {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px !important;
+            border-radius: 8px;
+            margin-bottom: 20px !important;
+            border: none !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        /* Chart background colors */
+        .card {
+            background: rgba(255, 255, 255, 0.3);
+            border: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .card-header {
+            background: rgba(255, 255, 255, 0.4);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Summary cards with better visibility */
+        .bg-success {
+            background: linear-gradient(135deg, #10d876 0%, #06d6a0 100%) !important;
+        }
+        
+        .bg-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%) !important;
+        }
+        
+        /* Balance card specific styling */
+        .card.text-white.bg-success {
+            background: linear-gradient(135deg, #10d876 0%, #06d6a0 100%) !important;
+        }
+        
+        .card.text-white.bg-danger {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 100%) !important;
+        }
+        
+        /* Force white text with strong contrast */
+        .card.text-white {
+            color: white !important;
+        }
+        
+        .card.text-white .card-header {
+            color: white !important;
+            background: rgba(0, 0, 0, 0.1) !important;
+            font-weight: 600;
+        }
+        
+        .card.text-white .card-body {
+            color: white !important;
+        }
+        
+        .card.text-white .card-title {
+            color: white !important;
+            font-weight: bold;
+            font-size: 1.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Chart container styling */
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+    </style>
+</div>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
