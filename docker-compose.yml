@@ -4,7 +4,7 @@ services:
     image: mysql:8.0
     container_name: finance-tracker-db
     environment:
-      MYSQL_ROOT_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: admin
       MYSQL_DATABASE: finance_tracker
     ports:
       - "3306:3306"
@@ -21,7 +21,7 @@ services:
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/finance_tracker
       SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_DATASOURCE_PASSWORD: admin
 
 volumes:
   mysql_data:

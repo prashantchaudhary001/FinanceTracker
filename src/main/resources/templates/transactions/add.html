@@ -9,7 +9,12 @@
                     <h4>Add New Transaction</h4>
                 </div>
                 <div class="card-body">
-                    <form th:action="@{/transactions/add}" th:object="${transaction}" method="post">
+                    <!-- Error message display -->
+                    <div th:if="${error}" class="alert alert-danger" role="alert">
+                        <span th:text="${error}"></span>
+                    </div>
+                    
+                    <form th:action="@{/transactions/add}" th:object="${transaction}" method="post" id="transactionForm">
                         
                         <div class="mb-3">
                             <label for="description" class="form-label">Description</label>
@@ -54,6 +59,52 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('transactionForm');
+            const typeSelect = document.getElementById('type');
+            const amountInput = document.getElementById('amount');
+            
+            // Get current balance from server
+            const currentBalance = /*[[${balance != null ? balance : 0}]]*/ 0;
+            
+            form.addEventListener('submit', function(e) {
+                const selectedType = typeSelect.value;
+                const enteredAmount = parseFloat(amountInput.value) || 0;
+                
+                console.log('Form submitted');
+                console.log('Type:', selectedType);
+                console.log('Amount:', enteredAmount);
+                console.log('Current Balance:', currentBalance);
+                
+                // Check if it's an expense and exceeds balance
+                if (selectedType === 'EXPENSE' && enteredAmount > currentBalance) {
+                    e.preventDefault(); // Stop form submission
+                    alert('Your balance is not sufficient! Available balance: ₹' + currentBalance + 
+                          '. You cannot add expense of ₹' + enteredAmount);
+                    return false;
+                }
+            });
+            
+            // Real-time validation while typing
+            amountInput.addEventListener('input', function() {
+                const selectedType = typeSelect.value;
+                const enteredAmount = parseFloat(this.value) || 0;
+                
+                if (selectedType === 'EXPENSE' && enteredAmount > currentBalance) {
+                    this.style.borderColor = 'red';
+                    this.title = 'Amount exceeds available balance of ₹' + currentBalance;
+                } else {
+                    this.style.borderColor = '';
+                    this.title = '';
+                }
+            });
+        });
+    </script>
 </div>
 </html>
+
+
+
 
